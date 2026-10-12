@@ -1,8 +1,10 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: `${import.meta.env.VITE_API_URL || ''}/api`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
   timeout: 10000,
 });
 
@@ -10,9 +12,11 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -34,10 +38,17 @@ api.interceptors.response.use(
       // Network error – retry up to MAX_RETRIES times
       if (retryCount < MAX_RETRIES) {
         retryCount++;
-        await new Promise((res) => setTimeout(res, 1000 * retryCount));
+
+        await new Promise((res) =>
+          setTimeout(res, 1000 * retryCount)
+        );
+
         return api(config);
       }
-      return Promise.reject(new Error('Network error. Please check your connection.'));
+
+      return Promise.reject(
+        new Error('Network error. Please check your connection.')
+      );
     }
 
     if (response.status === 401) {
@@ -47,6 +58,7 @@ api.interceptors.response.use(
     }
 
     retryCount = 0;
+
     return Promise.reject(error);
   }
 );
